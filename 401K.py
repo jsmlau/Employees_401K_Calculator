@@ -15,9 +15,11 @@ class Error(Exception):
     """Base class for other exceptions"""
     pass
 
+
 class EmpNumError(Error):
     """Raised when the employee number is invalid"""
     pass
+
 
 class IsFull(Error):
     """Raised when the supervisor array is full"""
@@ -28,13 +30,13 @@ class IsFull(Error):
 class Employee:
     # static member
     DEFAULT_NAME = "unidentified"
-    DEFAULT_NUM = 999
-    BENEFIT_ID = 500
-    MIN_EMPLY_NUM = 100
-    MAX_EMPLY_NUM = 999
+    DEFAULT_NUM = 1234
+    BENEFIT_ID = 5000
+    MIN_EMPLY_NUM = 1000
+    MAX_EMPLY_NUM = 99999
 
     # constructor
-    def __init__(self, name=DEFAULT_NAME, number=DEFAULT_NUM):
+    def __init__(self, name, number):
         self.employee_name = name
         self.employee_num = number
 
@@ -61,7 +63,7 @@ class Employee:
         if self.validate_name(name):
             self.__name = name
         else:
-            self.__name = self.DEFAULT_NAME   
+            self.__name = self.DEFAULT_NAME
 
     @employee_num.setter
     def employee_num(self, number):
@@ -70,15 +72,15 @@ class Employee:
 
         Args:
             number (int): Employee id 
-        
+
         Returns:
             self.number = self.DEFAULT_NUM
-        """        
+        """
         if self.validate_id(number):
             self.__number = number
         else:
             self.__number = self.DEFAULT_NUM
-        
+
         if self.determine_benefits(number):
             self.__benefits = True
         else:
@@ -97,8 +99,8 @@ class Employee:
         else:
             ret_str_bnft = "No Benefits"
 
-        ret_str = '\n\n{} # {} ({})'.format(self.employee_name,
-                                        str(self.employee_num), ret_str_bnft)
+        ret_str = '\n{} | ID #: {} | (*{})'.format(self.employee_name,
+                                                   str(self.employee_num), ret_str_bnft)
         return ret_str
 
     def determine_benefits(self, number):
@@ -109,9 +111,8 @@ class Employee:
 
         Returns:
             bool: True for eligible. False otherwise.
-        """        
+        """
         return number < Employee.BENEFIT_ID
-            
 
     @classmethod
     def validate_name(cls, the_name):
@@ -122,7 +123,7 @@ class Employee:
 
         Returns:
             bool: True for valid. False otherwise.
-        """        
+        """
         return (type(the_name) is str and the_name.isnumeric() is False)
 
     @classmethod
@@ -134,10 +135,9 @@ class Employee:
 
         Returns:
             bool: True for valid. False otherwise.
-        """        
+        """
         return (type(employee_id) is int and
                 Employee.MIN_EMPLY_NUM <= employee_id <= Employee.MAX_EMPLY_NUM)
-            
 
 
 # ====================== End of Base Class: Employee Class ======================
@@ -174,13 +174,13 @@ class ProductionWorker(Employee):
         rate: Hold the hourly pay rate of production workers
         hour: Hold the hours worked by production workers
         """
-        # Call Base Class
-        super().__init__(*args, **kwargs)
 
         # Derived Class attributes
         self.employee_shift = shift
         self.hourly_pay_rate = rate
         self.hours_worked = hour
+        # Call Base Class
+        super().__init__(*args, **kwargs)
 
     # accessors
     @property
@@ -201,12 +201,12 @@ class ProductionWorker(Employee):
         """ Set employee shift.
 
         Args:
-            shift (Shift): Employee shift.
+            shift (Enum): Employee shift.
 
         Returns:
             Shift: Set instance variable shift to input shift if valid. Set to default shift otherwise.
         """
-        if type(shift) is Shift:
+        if shift in Shift:
             self.__shift = shift
         elif type(shift) is int and (1 <= shift <= 3):
             self.__shift = Shift(shift)
@@ -219,7 +219,7 @@ class ProductionWorker(Employee):
 
         Args:
             rate (int): Hourly pay rate
-        """        
+        """
         if self.validate_rate(rate):
             self.__rate = rate
         else:
@@ -228,7 +228,7 @@ class ProductionWorker(Employee):
     @hours_worked.setter
     def hours_worked(self, hour):
         """Set the hour worked.
-        
+
         Args:
             hour (int): Hour worked
         """
@@ -236,11 +236,10 @@ class ProductionWorker(Employee):
             self.__hour = hour
         else:
             self.__hour = self.DEFAULT_HOURS_WORKED
-        
 
     def gross_pay(self, rate, hour):
         """ Calculate the gross pay for production workers.
-        
+
         Args:
             rate (int): Hourly pay rate
             hour (int): Hour worked
@@ -257,7 +256,7 @@ class ProductionWorker(Employee):
     def __str__(self):
         """ Call Base Class to_string to display name and id. Concatenate
         Production Workers' shift, hourly rate, hours worked and gross pay. 
-        
+
         Returns:
             str: Return a string.
         """
@@ -265,8 +264,7 @@ class ProductionWorker(Employee):
         mro = super().__self_class__.__mro__
         if len(mro) - mro.index(me) > 2:
             ret_str = super().__str__()
-        ret_str += "\nShift: {} \n${} per hour \n{} hours this week \n${} " \
-                   "gross pay\n" \
+        ret_str += "\nTitle: Production Worker \nShift: {} \nWage: ${} /hr \nHours Worked: {} hrs this week \nGross Pay: ${}\n" \
                    "".format(str(self.employee_shift.name),
                              str(self.hourly_pay_rate), str(self.hours_worked),
                              str(self.gross_pay(self.hourly_pay_rate,
@@ -283,7 +281,7 @@ class ProductionWorker(Employee):
 
         Returns:
             bool: True for valid. False otherwise.
-        """        
+        """
         return (type(rate) is int and
                 cls.MIN_HOURLY_PAY_RATE <= rate <= cls.MAX_HOURLY_PAY_RATE)
 
@@ -325,13 +323,14 @@ class ShiftSupervisor(Employee):
         emp_array: The array of employees
         num_workers: Hold the number of workers under the supervisor
         """
-        super().__init__(*args, **kwargs)
+
         self.annual_salary = salary
         self.supervisor_shift = shift
         self.emp_array = numpy.empty(
             shape=(1, self.valid_arr_capacity(emp_array)),
             dtype=ProductionWorker)
-        self.num_worker = num_worker
+        self.number_of_workers = num_worker
+        super().__init__(*args, **kwargs)
 
     # accessors
     @property
@@ -342,9 +341,9 @@ class ShiftSupervisor(Employee):
     def supervisor_shift(self):
         return self.__shift
 
-    @property
-    def add_to_array(self):
-        return self.__emp_array
+    # @property
+    # def add_to_array(self):
+    #     return self.emp_array
 
     @property
     def number_of_workers(self):
@@ -357,7 +356,7 @@ class ShiftSupervisor(Employee):
 
         Args:
             salary (int): Annual salary of supervisor
-        """        
+        """
         if self.valid_salary(salary):
             self.__salary = salary
         else:
@@ -369,7 +368,7 @@ class ShiftSupervisor(Employee):
 
         Args:
             shift (Shift): Shift of supervisor
-        """        
+        """
         if type(shift) is Shift:
             self.__shift = shift
         elif type(shift) is int and (1 <= shift <= 3):
@@ -377,7 +376,13 @@ class ShiftSupervisor(Employee):
         else:
             self.__shift = self.DEFAULT_SHIFT
 
-    @add_to_array.setter
+    @number_of_workers.setter
+    def number_of_workers(self, num_worker):
+        if num_worker <= 0:
+            self.__num_worker = self.DEFAULT_NUM_OF_WORKERS
+        else:
+            self.__num_worker = num_worker
+
     def add_to_array(self, production_worker):
         """ Determine if the production worker should be added to the
         supervisor array. Raise error if the array is full. If it is not full
@@ -386,7 +391,7 @@ class ShiftSupervisor(Employee):
         if not self.shift_valid(production_worker):
             return
         try:
-            if self.emp_array.size <= self.num_worker:
+            if self.emp_array.size <= self.number_of_workers:
                 raise IsFull
         except ValueError:
             return
@@ -398,7 +403,7 @@ class ShiftSupervisor(Employee):
         # size by 1
         self.emp_array = numpy.delete(self.emp_array, 0)
         # update worker's number
-        self.num_worker += 1
+        self.number_of_workers += 1
 
     # helper functions
     @classmethod
@@ -422,7 +427,7 @@ class ShiftSupervisor(Employee):
 
         Returns:
             ProductionWorker: Array
-        """        
+        """
         if type(emp_array) is int and emp_array > 0:
             return emp_array
         # else
@@ -430,12 +435,12 @@ class ShiftSupervisor(Employee):
 
     def shift_valid(self, worker_obj):
         """ Check if the worker is in the same shift as supervisor."""
-        return worker_obj.shift is self.supervisor_shift()
+        return worker_obj.employee_shift is self.supervisor_shift
 
     def bonus(self):
         """Check if the supervisor get bonus or not."""
-        if self.num_worker > self.WORKERS_REQUIRED:
-            self.salary = self.salary + self.BONUS_ADD_TO_SALARY
+        if self.number_of_workers > self.WORKERS_REQUIRED:
+            self.annual_salary = self.annual_salary + self.BONUS_ADD_TO_SALARY
             return True
         else:
             return False
@@ -447,17 +452,17 @@ class ShiftSupervisor(Employee):
         mro = super().__self_class__.__mro__
         if len(mro) - mro.index(me) > 2:
             ret_str = super().__str__()
-        ret_str += "\nSalary ${} \nShift: {} \n{} workers in their " \
-                   "shift\n".format(self.get_annual_salary(),
-                                    self.get_supervisor_shift().name,
-                                    self.get_number_of_workers())
+        ret_str += "\nTitle: Shift Supervisor \nAnnual Salary ${} \nShift: {} \n{} workers in their " \
+                   "shift\n".format(self.annual_salary,
+                                    self.supervisor_shift.name,
+                                    self.number_of_workers)
 
         # Check if there's any worker under a supervisor
         # List Comprehension to obtain only Non-None type element
         the_array = numpy.array([i for i in self.emp_array if i is not None])
-        if self.get_number_of_workers() > 0:
-            for i in the_array:
-                ret_str += "\nWorkers: \n{}".format(i.to_string())
+        if self.number_of_workers > 0:
+            for i in range(len(the_array)):
+                ret_str += "\nWorkers {}\n{}".format(i+1, the_array[i])
 
         return ret_str
 
@@ -508,12 +513,12 @@ class Member401k(ShiftSupervisor, ProductionWorker):
 
         Args:
             account_num (str): employee account number
-        """        
+        """
         if type(account_num) is str and len(account_num) is 10:
-            self.account_num = '{}-{}'.format(account_num[0:3], account_num[3:])
+            self.account_num = '{}-{}'.format(
+                account_num[0:3], account_num[3:])
         else:
             self.account_num = self.DEFAULT_401K_ACCT_NUM
-            
 
     @contributed_amount.setter
     def contributed_amount(self, amount):
@@ -521,13 +526,12 @@ class Member401k(ShiftSupervisor, ProductionWorker):
 
         Args:
             amount (int): Amount contributed
-        """        
+        """
         if self.validate_contribute_amount(amount):
             self.amount = amount
             self.actual_max(self.amount)
         else:
             self.amount = self.DEFAULT_MIN_AMOUNT
-        
 
     @classmethod
     def validate_contribute_amount(cls, amount):
@@ -538,10 +542,9 @@ class Member401k(ShiftSupervisor, ProductionWorker):
 
         Returns:
             bool: True for valid. False otherwise.
-        """        
+        """
         return (type(amount) is int and
                 cls.DEFAULT_MIN_AMOUNT <= amount <= cls.DEFAULT_MAX_AMOUNT)
-
 
     def max_match(self, **kwargs):
         """Calculate the max value.
@@ -550,7 +553,7 @@ class Member401k(ShiftSupervisor, ProductionWorker):
 
         Returns:
             int: Max value = monthly pay * default match
-        """        
+        """
         # local variable
         monthly_pay = 0
         # check if the instantiated object is a worker or supervisor
@@ -577,7 +580,7 @@ class Member401k(ShiftSupervisor, ProductionWorker):
 
         Returns:
             int: Actual value.
-        """        
+        """
         self.actual_value = amount
         # check if the contributed amount larger than max_match value
         if self.actual_value > self.max_value:
@@ -599,9 +602,10 @@ class Member401k(ShiftSupervisor, ProductionWorker):
         if self.is_supervisor is True:
             emp_salary = self.annual_salary / 12
         else:
-            emp_salary = self.gross_pay(self.hourly_pay_rate, self.hours_worked) * 4
+            emp_salary = self.gross_pay(
+                self.hourly_pay_rate, self.hours_worked) * 4
 
-        ret_str += "\nAccount #{} \nMonthly Pay ${} \nAmount contributed: " \
+        ret_str += "\n401K Account #: {} \nMonthly Pay: ${} \nAmount contributed: " \
                    "${} \nMax match: ${} \nActual Match: ${}\n".format(
                        self.account_number, int(
                            emp_salary), self.contributed_amount,
@@ -619,59 +623,60 @@ def main():
     answer1 = str(input('\n\nEmployee name (Use empty value to skip): '))
     answer2 = int(input('Employee number (Use empty value to skip): '))
     answer3 = int(input('Shift (DAY = 1, SWING = 2, NIGHT = 3): '))
-    position = str(input('Worker or Supervisor? (w for worker, s for supervisor): '))
-    
+    position = str(
+        input('Worker or Supervisor? (w for worker, s for supervisor): '))
+
     if position == 'w':
         answer5 = int(input('Rate per hour: '))
         answer6 = int(input('Hour per week: '))
         answer7 = str(input('Account number (Use empty value to skip): '))
         answer8 = int(input('Amount contributed: '))
 
-        employee = Member401k(name=answer1, number=answer2, shift=answer3, rate=answer5, hour=answer6, account_num=answer7, amount=answer8)
+        employee = Member401k(name=answer1, number=answer2, shift=answer3,
+                              rate=answer5, hour=answer6, account_num=answer7, amount=answer8)
     elif position == 's':
         answer9 = int(input('Annual Salary: '))
         answer10 = int(input('Number of worker(s): '))
         answer11 = str(input('401K account number (10-digit): '))
         answer12 = int(input('Amount contributed: '))
-        employee = Member401k(name=answer1, number=answer2, salary=answer9, shift=answer3, num_worker=answer10, account_num=answer11, amount=answer12)
-    
+        employee = Member401k(name=answer1, number=answer2, salary=answer9,
+                              shift=answer3, num_worker=answer10, account_num=answer11, amount=answer12)
+
     print(employee)
 
-"""
-    # Instantiate Workers object
-    worker1 = Member401k(name='Marco Joseph', number=134, shift=Shift.DAY, rate=13,
-                         hour=35, account_num='', amount=72)
-    worker2 = Member401k(name='Angela Pittman', number=566, shift=Shift.SWING,
-                         rate=11,
-                         hour=21, account_num='', amount=172)
-    # Instantiate Supervisors object
-    supervisor1 = Member401k(name='Zach Mccall', number=456, salary=51680,
-                             shift=Shift.NIGHT, num_worker=0, account_num='',
-                             amount=550)
-    supervisor2 = Member401k(name='Helena Navarro', number=987, salary=71690,
-                             shift=Shift.DAY, num_worker=0, account_num='',
-                             amount=250)
+    # # Instantiate Workers object
+    # worker1 = Member401k(name='Marco Joseph', number=1340, shift=Shift.DAY, rate=13,
+    #                      hour=35, account_num='', amount=72)
+    # worker2 = Member401k(name='Angela Pittman', number=5660, shift=Shift.SWING,
+    #                      rate=11,
+    #                      hour=21, account_num='', amount=172)
+    # # Instantiate Supervisors object
+    # supervisor1 = Member401k(name='Zach Mccall', number=2560, salary=51680,
+    #                          shift=Shift.NIGHT, num_worker=0, account_num='',
+    #                          amount=550)
+    # supervisor2 = Member401k(name='Helena Navarro', number=9870, salary=71690,
+    #                          shift=Shift.DAY, num_worker=0, account_num='',
+    #                          amount=250)
 
-    print("----------Before All Max Out----------------")
-    print("\n***Production Workers***")
-    print(worker1)
-    print(worker2)
-    print("***Supervisor***")
-    print(supervisor1)
-    print(supervisor2)
+    # print("----------Before All Max Out----------------")
+    # print("\n***Production Workers***")
+    # print(worker1)
+    # print(worker2)
+    # print("***Supervisor***")
+    # print(supervisor1)
+    # print(supervisor2)
 
-    # Change contribute amount
-    worker1.contributed_amount = 1000
-    supervisor2.contributed_amount = 1000
+    # # Change contribute amount
+    # worker1.contributed_amount = 1000
+    # supervisor2.contributed_amount = 1000
 
-    print("----------Now All Max Out----------------")
-    print("\n***Production Workers***")
-    print(worker1)
-    print(worker2)
-    print("***Supervisor***")
-    print(supervisor1)
-    print(supervisor2)
-"""
+    # print("----------Now All Max Out----------------")
+    # print("\n***Production Workers***")
+    # print(worker1)
+    # print(worker2)
+    # print("***Supervisor***")
+    # print(supervisor1)
+    # print(supervisor2)
 
 
 # # ====================== End of Client (As a Function) ======================
